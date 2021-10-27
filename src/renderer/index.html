@@ -1,0 +1,42 @@
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+        <!-- UIkit CSS -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.7.6/dist/css/uikit.min.css" />
+
+        <!-- UIkit JS -->
+        <script src="https://cdn.jsdelivr.net/npm/uikit@3.7.6/dist/js/uikit.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/uikit@3.7.6/dist/js/uikit-icons.min.js"></script>
+
+        <link rel="stylesheet" href="./style.css" />
+    </head>
+    <body>
+        <div id="window">
+            <nav class="uk-navbar-container uk-margin" uk-navbar>
+                <div class="nav-overlay uk-navbar-left">
+                    <span class="uk-navbar-item uk-logo" href="#">보관함</span>
+                </div>
+
+                <div class="nav-overlay uk-navbar-right">
+                    <a class="uk-navbar-toggle" uk-search-icon uk-toggle="target: .nav-overlay; animation: uk-animation-fade" href="#"></a>
+                </div>
+
+                <div class="nav-overlay uk-navbar-left uk-flex-1" hidden>
+                    <div class="uk-navbar-item uk-width-expand">
+                        <form class="uk-search uk-search-navbar uk-width-1-1">
+                            <input class="uk-search-input" type="search" placeholder="Search" id="search" autofocus />
+                        </form>
+                    </div>
+
+                    <a class="uk-navbar-toggle" uk-close uk-toggle="target: .nav-overlay; animation: uk-animation-fade" href="#"></a>
+                </div>
+            </nav>
+            <ul id="list" class="uk-list uk-list-striped"></ul>
+        </div>
+
+        <script src="./index.js"></script>
+    </body>
+</html>
