@@ -73,6 +73,7 @@ function createPopupMenu(arg) {
                         x: 15,
                         y: 15,
                     },
+                    titleBarStyle: "hidden",
                 });
 
                 showWindow.loadFile(path.join(__dirname, "../renderer", "/show.html")).then(() => {

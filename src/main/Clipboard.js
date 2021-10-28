@@ -3,19 +3,22 @@
     - a library for clipboard management
 */
 
-const { clipboard, ipcMain } = require("electron");
-const { htmlToText } = require("html-to-text");
+const { clipboard, ipcMain, app } = require("electron");
 const validator = require("validator");
 const storage = require("electron-storage");
 const fs = require("fs");
+const path = require("path");
+
+const DATAPATH = app.getPath("userData");
 
 //----- Class Copy -----//
 class Copy {
     #reTags = /^#([\w|가-힣|_])+$/;
     #reSpace = /\s+/;
 
-    constructor(text, time) {
-        this.text = text || "";
+    constructor(html, text, time) {
+        this.text = text;
+        this.html = html;
         this.time = typeof time === "string" ? time : time.toISOString();
         this.type = this.inferType();
         this.tags = this.inferTags();
@@ -43,6 +46,17 @@ class Copy {
             if (imageExtensions.filter((e) => text.endsWith(e)).length > 0) return "image";
             return "url";
         } else if (validator.isHexColor(text)) return "color";
+        else if (validator.isHSL(text)) return "color";
+        else if (validator.isMobilePhone(text)) return "phone";
+        else if (validator.isRgbColor(text)) return "color";
+        else if (validator.isBtcAddress(text)) return "BTC";
+        else if (validator.isEthereumAddress(text)) return "ETH";
+        else if (
+            validator.isJSON(text, {
+                allow_primitives: true,
+            })
+        )
+            return "JSON";
         else if (imageExtensions.filter((e) => text.endsWith(e)).length > 0) return "image";
         else return "text";
     }
@@ -57,20 +71,23 @@ class Copy {
 
     // import from json
     static fromJSON(json) {
-        let copy = new Copy(json.text, json.time);
+        let copy = new Copy(json.html, json.text, json.time);
         copy.pinned = json.pinned;
         return copy;
     }
 
     // export to raw
-    static toRaw(text) {
-        clipboard.writeText(text, "clipboard");
+    static toRaw(copy) {
+        clipboard.writeText(copy.text, "clipboard");
+        clipboard.writeHTML(copy.html, "clipboard");
+        clipboard.writeImage(copy.image, "clipboard");
     }
 
     // export json
     json() {
         return {
             text: this.text,
+            html: this.html,
             time: this.time,
             type: this.type,
             tags: this.tags,
@@ -142,15 +159,38 @@ class Clipboard {
     beginWatch(frequency) {
         frequency = frequency || 100;
         this.watcherID = setInterval(() => {
+            let html = clipboard.readHTML("clipboard");
             let text = clipboard.readText("clipboard");
-            text = htmlToText(text);
+            let image = clipboard.readImage("clipboard");
             let time = new Date();
 
+            if (!image.isEmpty()) {
+                if (html.includes("<img")) {
+                    var src = html.match(/\<img.+src\=(?:\"|\')(.+?)(?:\"|\')(?:.+?)\>/)[1];
+                    src = src.split("/");
+                    src = src[src.length - 1];
+                    text = src;
+                } else {
+                    let dirPath = path.join(DATAPATH, "temp");
+                    if (!fs.existsSync(dirPath)) {
+                        fs.mkdirSync(dirPath);
+                    }
+
+                    if (!html.endsWith(".png")) html += ".png";
+                    var filePath = path.join(DATAPATH, "temp", html);
+                    html = `<img src="${filePath}"/>`;
+                    var saveFile = true;
+                }
+            }
             if (text && (this.history.length === 0 || text !== this.history[0].text)) {
                 this.numUpdates++;
-                this.history.unshift(new Copy(text, time));
+                this.history.unshift(new Copy(html, text, time));
                 this.saveToDB();
                 this.updateNotifier();
+
+                if (saveFile) {
+                    fs.writeFile(filePath, image.toPNG(1), () => {});
+                }
             }
         }, frequency);
     }
