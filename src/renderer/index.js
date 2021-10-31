@@ -1,5 +1,7 @@
-const { ipcRenderer, clipboard } = require("electron");
+const { ipcRenderer, clipboard, shell } = require("electron");
 var $ = require("jquery");
+const ogs = require("open-graph-scraper");
+var ogsCache = {};
 
 function updateList(history) {
     $("#list").empty();
@@ -15,8 +17,23 @@ function updateList(history) {
         minutes = new String(time.getMinutes());
         minutes = minutes.length === 1 ? "0" + minutes : minutes;
 
-        $("#list").append(`<li class="item" data-id="${idx}">
-            <p class="item-text">${text.length <= 200 ? text : text.slice(0, 200) + "..."}</p>
+        $("#list").append(`<li class="item" id="${idx}" data-id="${idx}">
+            ${
+                type === "url" && (!(text in ogsCache) || ogsCache[text].ogTitle.length > 0)
+                    ? text in ogsCache
+                        ? `<p class="item-text uk-link-heading">
+                                <a href="${text}" target="_blank"><span uk-icon="link"></span> ${ogsCache[text].ogTitle.length <= 200 ? ogsCache[text].ogTitle : ogsCache[text].ogTitle.slice(0, 200) + "..."}</a>
+                            </p>
+                            <p class="item-text uk-article-meta">
+                                ${ogsCache[text].ogDescription.length <= 200 ? ogsCache[text].ogDescription : ogsCache[text].ogDescription.slice(0, 200) + "..."}
+                            </p>`
+                        : `<p class="item-text uk-link-heading">
+                                <a href="${text}" target="_blank"><span uk-icon="link"></span> ${text.length <= 200 ? text : text.slice(0, 200) + "..."}</a> <span uk-spinner="ratio: 0.5"></span>
+                            </p>`
+                    : `<p class="item-text">
+                            ${text.length <= 200 ? text : text.slice(0, 200) + "..."}
+                        </p>`
+            }
             <div class="item-meta">
                 <span class="item-tags">
                     <span class="uk-badge item-type">${type}</span>
@@ -44,6 +61,34 @@ function updateList(history) {
                 }</span>
             </div>
         </li>`);
+
+        if (type === "url" && !(text in ogsCache)) {
+            ogs({ url: text })
+                .then((data) => {
+                    let { error, result } = data;
+                    if (!error && result.success) {
+                        $(`#${idx} > .item-text`).html(`
+                            <p class="item-text uk-link-heading">
+                                <a href="${text}" target="_blank"><span uk-icon="link"></span> ${result.ogTitle.length <= 200 ? result.ogTitle : result.ogTitle.slice(0, 200) + "..."}</a>
+                            </p>
+                            <p class="item-text uk-article-meta">
+                                ${result.ogDescription.length <= 200 ? result.ogDescription : result.ogDescription.slice(0, 200) + "..."}
+                            </p>
+                        `);
+                        ogsCache[text] = {
+                            ogTitle: result.ogTitle,
+                            ogDescription: result.ogDescription,
+                        };
+                    }
+                })
+                .catch(() => {
+                    $(`#${idx} > .item-text span[uk-spinner]`).remove();
+                    ogsCache[text] = {
+                        ogTitle: "",
+                        ogDescription: "",
+                    };
+                });
+        }
     });
 
     $("li.item").on("click", function () {
@@ -83,4 +128,10 @@ window.addEventListener("contextmenu", (e) => {
         const id = item.attr("data-id") * 1;
         ipcRenderer.send("show-context-menu", clipboardHistory[id]);
     }
+});
+
+// force the links to be opened in the default browser
+$(document).on("click", 'a[href^="http"]', function (event) {
+    event.preventDefault();
+    shell.openExternal(this.href);
 });
