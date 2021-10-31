@@ -85,7 +85,12 @@ function updateList(history) {
     //     clipboard.writeText(history[id].text, "clipboard");
     // });
 
-    $("li.item").on("click", function () {
+    $("li.item").on("click", function (event) {
+        if($(event.target).is('a[href^="http"]')){
+            event.preventDefault();
+            shell.openExternal(event.target.href);
+            return;
+        }
         const id = $(this).attr("data-id") * 1;
         ipcRenderer.send("show-expand", history[id]);
     });
@@ -118,10 +123,4 @@ window.addEventListener("contextmenu", (e) => {
         const id = item.attr("data-id") * 1;
         ipcRenderer.send("show-context-menu", clipboardHistory[id]);
     }
-});
-
-// force the links to be opened in the default browser
-$(document).on("click", 'a[href^="http"]', function (event) {
-    event.preventDefault();
-    shell.openExternal(this.href);
 });
