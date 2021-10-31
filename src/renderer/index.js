@@ -20,35 +20,29 @@ function updateList(history) {
             <div class="item-meta">
                 <span class="item-tags">
                     <span class="uk-badge item-type">${type}</span>
-                    ${
-                        type === "color"
-                            ? `<span class="uk-badge" style="background-color: ${text}"></span>`
-                            : ""
-                    }
+                    ${type === "color" ? `<span class="uk-badge" style="background-color: ${text}"></span>` : ""}
                     ${
                         tags.length <= 3
                             ? tags.map((t) => `<span class="uk-badge">${t}</span>`).join("")
                             : tags
                                   .slice(0, 3)
                                   .map((t) => `<span class="uk-badge">${t}</span>`)
-                                  .join("") +
-                              `<span class="uk-badge" style="background-color: green">+${
-                                  tags.length - 3
-                              }</span>`
+                                  .join("") + `<span class="uk-badge" style="background-color: green">+${tags.length - 3}</span>`
                     }
                 </span>
-                <span class="item-time">${
-                    todayMonth === month && todayDate === date
-                        ? `${hours}:${minutes}`
-                        : `${month}.${date} ${hours}:${minutes}`
-                }</span>
+                <span class="item-time">${todayMonth === month && todayDate === date ? `${hours}:${minutes}` : `${month}.${date} ${hours}:${minutes}`}</span>
             </div>
         </li>`);
     });
 
+    // $("li.item").on("click", function () {
+    //     const id = $(this).attr("data-id") * 1;
+    //     clipboard.writeText(history[id].text, "clipboard");
+    // });
+
     $("li.item").on("click", function () {
         const id = $(this).attr("data-id") * 1;
-        clipboard.writeText(history[id].text, "clipboard");
+        ipcRenderer.send("show-expand", history[id]);
     });
 }
 
@@ -65,16 +59,12 @@ ipcRenderer.on("clipboard-updated", (event, history) => {
 // search
 $("#search").on("change keyup paste", function () {
     const keyword = $(this).val();
-    let tempHistory = clipboardHistory
-        .slice()
-        .filter((x) => x.text.includes(keyword) || x.type.includes(keyword));
+    let tempHistory = clipboardHistory.slice().filter((x) => x.text.includes(keyword) || x.type.includes(keyword));
     updateList(tempHistory);
 });
 
 window.addEventListener("contextmenu", (e) => {
-    let item = e.path.filter((p) =>
-        $(p).attr("class") ? $(p).attr("class").split(" ").includes("item") : false
-    );
+    let item = e.path.filter((p) => ($(p).attr("class") ? $(p).attr("class").split(" ").includes("item") : false));
     if (item.length > 0) {
         e.preventDefault();
 

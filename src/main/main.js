@@ -43,7 +43,7 @@ function createPopupMenu(arg) {
         {
             label: "Copy",
             click: () => {
-                Copy.toRaw(arg.text);
+                Copy.toRaw(arg);
             },
         },
         {
@@ -61,27 +61,7 @@ function createPopupMenu(arg) {
         {
             label: "Expand",
             click: () => {
-                let showWindow = new BrowserWindow({
-                    width: 500,
-                    height: 500,
-                    webPreferences: {
-                        nodeIntegration: true,
-                        contextIsolation: false,
-                        enableRemoteModule: true,
-                    },
-                    trafficLightPosition: {
-                        x: 15,
-                        y: 15,
-                    },
-                    titleBarStyle: "hidden",
-                });
-
-                showWindow.loadFile(path.join(__dirname, "../renderer", "/show.html")).then(() => {
-                    showWindow.webContents.send("show-copy", arg);
-                });
-                showWindow.on("closed", function () {
-                    showWindow = null;
-                });
+                expandShow(arg);
             },
         },
     ]);
@@ -90,28 +70,30 @@ function createPopupMenu(arg) {
 function createMenu(history) {
     pinned = history
         .filter((h) => h.pinned)
-        .map((pin) => ({
+        .map((pin, idx) => ({
             label: pin.text.length > 50 ? pin.text.slice(0, 50) + "..." : pin.text,
             click: () => {
-                Copy.toRaw(pin.text);
+                Copy.toRaw(pin);
             },
+            accelerator: `CmdOrCtrl+${idx + 1}`,
         }));
     if (pinned.length > 0)
         pinned.unshift({
             label: "Pinned",
-            sublabel: "test",
+            enabled: false,
         });
 
     history = history.slice(0, 10).map((h) => ({
         label: h.text.length > 50 ? h.text.slice(0, 50) + "..." : h.text,
         click: () => {
-            Copy.toRaw(h.text);
+            Copy.toRaw(h);
         },
         type: "radio",
     }));
     if (history.length > 0)
         history.unshift({
             label: "History",
+            enabled: false,
         });
 
     let template = [
@@ -157,6 +139,36 @@ function createMenu(history) {
 ipcMain.on("show-context-menu", (event, arg) => {
     const menu = createPopupMenu(arg);
     menu.popup(BrowserWindow.fromWebContents(event.sender));
+});
+
+//----- Show -----//
+
+function expandShow(arg) {
+    let showWindow = new BrowserWindow({
+        width: 500,
+        height: 500,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+            enableRemoteModule: true,
+        },
+        trafficLightPosition: {
+            x: 15,
+            y: 15,
+        },
+        titleBarStyle: "hidden",
+    });
+
+    showWindow.loadFile(path.join(__dirname, "../renderer", "/show.html")).then(() => {
+        showWindow.webContents.send("show-copy", arg);
+    });
+    showWindow.on("closed", function () {
+        showWindow = null;
+    });
+}
+
+ipcMain.on("show-expand", (event, arg) => {
+    expandShow(arg);
 });
 
 //----- Main Window -----//

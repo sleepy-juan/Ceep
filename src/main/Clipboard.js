@@ -79,8 +79,8 @@ class Copy {
     // export to raw
     static toRaw(copy) {
         clipboard.writeText(copy.text, "clipboard");
-        clipboard.writeHTML(copy.html, "clipboard");
-        clipboard.writeImage(copy.image, "clipboard");
+        // clipboard.writeHTML(copy.html, "clipboard");
+        // if (copy.image) clipboard.writeImage(copy.image, "clipboard");
     }
 
     // export json
@@ -159,12 +159,12 @@ class Clipboard {
     beginWatch(frequency) {
         frequency = frequency || 100;
         this.watcherID = setInterval(() => {
-            let html = clipboard.readHTML("clipboard");
             let text = clipboard.readText("clipboard");
+            var html = clipboard.readHTML("clipboard");
             let image = clipboard.readImage("clipboard");
-            let time = new Date();
 
             if (!image.isEmpty()) {
+                html = clipboard.readHTML("clipboard");
                 if (html.includes("<img")) {
                     var src = html.match(/\<img.+src\=(?:\"|\')(.+?)(?:\"|\')(?:.+?)\>/)[1];
                     src = src.split("/");
@@ -183,6 +183,8 @@ class Clipboard {
                 }
             }
             if (text && (this.history.length === 0 || text !== this.history[0].text)) {
+                let time = new Date();
+
                 this.numUpdates++;
                 this.history.unshift(new Copy(html, text, time));
                 this.saveToDB();
