@@ -66,3 +66,7 @@ nav {
 ::-webkit-scrollbar {
     display: none;
 }
+
+a:hover {
+    color: inherit;
+}
